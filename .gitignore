@@ -1,0 +1,35 @@
+#OS noise
+profile
+[Tt]humbs.db
+*.DS_Store
+*~
+*.swp
+*.out
+*.bak*
+*.lock
+
+#Other CSM
+.hg
+.svn
+CVS
+
+#Xcode noise
+*.log
+*~.nib
+*.moved-aside
+**/*.xcuserdata/*
+xcuserdata
+xcschemes
+
+#Project files
+[Bb]uild/
+DerivedData/
+
+#CocoaPods
+Pods
+
+#AppCode
+*/.idea/*
+.idea/*
+
+SDKBuildSteps.info
