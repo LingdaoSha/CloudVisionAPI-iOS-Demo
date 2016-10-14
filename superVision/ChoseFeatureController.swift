@@ -17,28 +17,28 @@ class ChoseFeatureController: UITableViewController {
   override func viewDidLoad() {
   }
 
-  override func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
-    let cell = tableView.cellForRowAtIndexPath(indexPath)!
-    if cell.accessoryType == .None {
+  override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+    let cell = tableView.cellForRow(at: indexPath)!
+    if cell.accessoryType == .none {
       selectedFeatures.append((cell.textLabel?.text)!)
-      cell.accessoryType = .Checkmark
+      cell.accessoryType = .checkmark
     } else {
-      for (i, el) in selectedFeatures.enumerate() {
+      for (i, el) in selectedFeatures.enumerated() {
         if el == (cell.textLabel?.text)! {
-          selectedFeatures.removeAtIndex(i)
+          selectedFeatures.remove(at: i)
         }
       }
-      cell.accessoryType = .None
+      cell.accessoryType = .none
     }
-    navigationItem.rightBarButtonItem?.enabled = !selectedFeatures.isEmpty
-    tableView.deselectRowAtIndexPath(indexPath, animated: true)
+    navigationItem.rightBarButtonItem?.isEnabled = !selectedFeatures.isEmpty
+    tableView.deselectRow(at: indexPath, animated: true)
   }
   
-  override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
+  override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
     
     if let data = UIImageJPEGRepresentation(scaledImage, 0.8) {
-      let b64String = data.base64EncodedStringWithOptions([])
-      if let resultsVC = segue.destinationViewController as? ResultsController {
+      let b64String = data.base64EncodedString(options: [])
+      if let resultsVC = segue.destination as? ResultsController {
         resultsVC.b64String = b64String
         resultsVC.features = selectedFeatures
       }

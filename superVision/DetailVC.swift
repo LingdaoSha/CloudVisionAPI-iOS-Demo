@@ -18,14 +18,14 @@ class DetailVC: UIViewController {
   
   override func viewDidLoad() {
     super.viewDidLoad()
-    if let imageData = NSData(base64EncodedString: b64str, options: []),
-           image = UIImage(data: imageData) {
+    if let imageData = Data(base64Encoded: b64str, options: []),
+           let image = UIImage(data: imageData) {
       imageView.image = image
     }
   }
   
   
-  override func viewDidAppear(animated: Bool) {
+  override func viewDidAppear(_ animated: Bool) {
     let image = imageView.image!
     let aspectRatioX = imageView.frame.width/image.size.width;
     let aspectRatioY = imageView.frame.height/image.size.height;
@@ -39,19 +39,19 @@ class DetailVC: UIViewController {
     }
     
     let bezPath = UIBezierPath()
-    bezPath.moveToPoint(CGPoint(x: points[0].x*imageRect.width/image.size.width, y: points[0].y*imageRect.height/image.size.height))
+    bezPath.move(to: CGPoint(x: points[0].x*imageRect.width/image.size.width, y: points[0].y*imageRect.height/image.size.height))
     for i in 1..<points.count {
-      bezPath.addLineToPoint(CGPoint(x: points[i].x*imageRect.width/image.size.width,
+      bezPath.addLine(to: CGPoint(x: points[i].x*imageRect.width/image.size.width,
                                      y: points[i].y*imageRect.height/image.size.height))
     }
-    bezPath.closePath()
+    bezPath.close()
     
     let shapeLayer = CAShapeLayer()
     shapeLayer.frame = imageRect
-    shapeLayer.path = bezPath.CGPath
+    shapeLayer.path = bezPath.cgPath
     shapeLayer.lineWidth = 1.5
-    shapeLayer.strokeColor = UIColor.redColor().CGColor
-    shapeLayer.fillColor = UIColor.clearColor().CGColor
+    shapeLayer.strokeColor = UIColor.red.cgColor
+    shapeLayer.fillColor = UIColor.clear.cgColor
     imageView.layer.addSublayer(shapeLayer)
   }
 }

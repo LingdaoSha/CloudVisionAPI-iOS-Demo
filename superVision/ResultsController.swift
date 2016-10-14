@@ -31,60 +31,62 @@ class ResultsController: UIViewController {
     tableView.rowHeight = UITableViewAutomaticDimension
   }
   
-  override func viewDidAppear(animated: Bool) {
-    let task = NSURLSession.sharedSession().dataTaskWithRequest(makeRequest()) { (data, response, err) in
-      UIApplication.sharedApplication().networkActivityIndicatorVisible = false
+  override func viewDidAppear(_ animated: Bool) {
+    let task = URLSession.shared.dataTask(with: makeRequest(), completionHandler: { (data, response, err) in
+      UIApplication.shared.isNetworkActivityIndicatorVisible = false
       guard err == nil else {
-        dispatch_async(dispatch_get_main_queue()) {
+        DispatchQueue.main.async {
           self.showErrorAlert()
         }
         return
       }
-      if let data = data, json = JSON(data: data)["responses"][0].dictionary {
+      if let data = data, let json = JSON(data: data)["responses"][0].dictionary {
         guard json["error"] == nil else { self.showErrorAlert(); return }
         self.result = json
         self.resultFeatures = Array(json.keys)
-        dispatch_async(dispatch_get_main_queue()) {
+        DispatchQueue.main.async {
           self.tableView.reloadData()
         }
       } else {
-        dispatch_async(dispatch_get_main_queue()) {
+        DispatchQueue.main.async {
           self.showErrorAlert()
         }
       }
-    }
-    UIApplication.sharedApplication().networkActivityIndicatorVisible = true
+    }) 
+    UIApplication.shared.isNetworkActivityIndicatorVisible = true
     task.resume()
   }
   
   
-  func makeRequest() -> NSURLRequest {
+  func makeRequest() -> URLRequest {
     var featuresWithMaxResults = [[String:String]]()
     for feature in features {
       let feaWithRes = ["type": feature, "maxResults": "32"]
       featuresWithMaxResults.append(feaWithRes)
     }
     let json = ["requests": [[
-      "image": ["content": b64String],
-      "features": featuresWithMaxResults
-    ]]]
-    let request = NSMutableURLRequest(URL: NSURL(string: "https://vision.googleapis.com/v1/images:annotate?key=\(apiKey)")!)
-    request.HTTPMethod = "POST"
-    request.HTTPBody = try! NSJSONSerialization.dataWithJSONObject(json, options: .PrettyPrinted)
+                "image": ["content": "\(b64String ?? "")"],
+                "features": featuresWithMaxResults]]
+               ]
+    let request = NSMutableURLRequest(url: URL(string: "https://vision.googleapis.com/v1/images:annotate?key=\(apiKey)")!)
+    request.httpMethod = "POST"
+    if JSONSerialization.isValidJSONObject(json) {
+        request.httpBody = try! JSONSerialization.data(withJSONObject: json, options: .prettyPrinted)
+    }
     request.addValue("application/json", forHTTPHeaderField: "Content-Type")
     request.addValue("application/json", forHTTPHeaderField: "Accept")
-    return request
+    return request as URLRequest
   }
   
   func showErrorAlert() {
-    let alertController = UIAlertController(title: "Error", message: "Something went wrong 😔", preferredStyle: .Alert);
-    let okAction = UIAlertAction(title: "OK", style: .Default, handler: nil);
+    let alertController = UIAlertController(title: "Error", message: "Something went wrong 😔", preferredStyle: .alert);
+    let okAction = UIAlertAction(title: "OK", style: .default, handler: nil);
     alertController.addAction(okAction);
-    self.presentViewController(alertController, animated: true, completion: nil);
+    self.present(alertController, animated: true, completion: nil);
   }
   
-  override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
-    let detailVC = segue.destinationViewController as! DetailVC
+  override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+    let detailVC = segue.destination as! DetailVC
     detailVC.points = points
     detailVC.b64str = b64String
   }
@@ -93,16 +95,16 @@ class ResultsController: UIViewController {
 
 extension ResultsController: UITableViewDataSource, UITableViewDelegate {
   
-  func numberOfSectionsInTableView(tableView: UITableView) -> Int {
+  func numberOfSections(in tableView: UITableView) -> Int {
     guard let number = resultFeatures?.count else { return 0 }
     return number
   }
   
-  func tableView(tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+  func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
     return resultFeatures?[section]
   }
   
-  func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+  func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
     let key = resultFeatures![section]
     if key == "safeSearchAnnotation" {
       return 1
@@ -110,21 +112,21 @@ extension ResultsController: UITableViewDataSource, UITableViewDelegate {
     return result[key]?.arrayValue.count ?? 0
   }
   
-  func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
-    let key = resultFeatures![indexPath.section]
+  func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+    let key = resultFeatures![(indexPath as NSIndexPath).section]
     var dict: [String: JSON]
     if key == "safeSearchAnnotation" {
       dict = result[key]!.dictionaryValue
     } else {
       let annotations = result[key]!.arrayValue
-      dict = annotations[indexPath.row].dictionaryValue
+      dict = annotations[(indexPath as NSIndexPath).row].dictionaryValue
     }
-    let cell = tableView.dequeueReusableCellWithIdentifier("cell", forIndexPath: indexPath) as! LabelCell
+    let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath) as! LabelCell
     cell.label.text = jsonToString(dict)
     return cell
   }
   
-  func jsonToString(dict: [String: JSON]) -> String {
+  func jsonToString(_ dict: [String: JSON]) -> String {
     var res = ""
     for key in Array(dict.keys) {
       if let strValue = dict[key]?.string {
@@ -133,22 +135,22 @@ extension ResultsController: UITableViewDataSource, UITableViewDelegate {
         res += "\(key): \(floatValue)\n"
       }
     }
-    res.removeAtIndex(res.endIndex.predecessor())
+    res.remove(at: res.characters.index(before: res.endIndex))
     return res
   }
   
-  func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
-    tableView.deselectRowAtIndexPath(indexPath, animated: true)
-    let key = resultFeatures![indexPath.section]
+  func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+    tableView.deselectRow(at: indexPath, animated: true)
+    let key = resultFeatures![(indexPath as NSIndexPath).section]
     guard key != "safeSearchAnnotation" else { return }
     let annotations = result[key]!.arrayValue
-    if let jsonPoints = annotations[indexPath.row]["boundingPoly"]["vertices"].array {
+    if let jsonPoints = annotations[(indexPath as NSIndexPath).row]["boundingPoly"]["vertices"].array {
       guard jsonPoints.count > 1 else { return }
       points = [CGPoint]()
       for point in jsonPoints {
         points.append(CGPoint(x:point["x"].doubleValue, y:point["y"].doubleValue))
       }
-      performSegueWithIdentifier("showBounds", sender: nil)
+      performSegue(withIdentifier: "showBounds", sender: nil)
     }
   }
 }
